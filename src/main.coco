@@ -1,0 +1,17 @@
+import argparse
+
+################################################################################
+# GET INPUT
+################################################################################
+
+parser = argparse.ArgumentParser(prog="hockey-scheduler", description="Schedules hockey games.")
+
+parser.add_argument("input", help="the input file, in toml format")
+
+arguments = parser.parse_args()
+
+arguments |> .input |> print
+
+################################################################################
+# HANDLE INPUT
+################################################################################

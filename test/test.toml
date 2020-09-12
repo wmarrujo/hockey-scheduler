@@ -1,0 +1,11 @@
+[Team A]
+    - {rink = Rink A, time = 2020-09-12 19:00}
+    - {rink = Rink A, time = 2020-09-10 20:00}
+    - {rink = Rink A, time = 2020-09-14 20:00}
+    - {rink = Rink A, time = 2020-09-15 21:00}
+    - unavailable = 2020-09-13
+[Team B]
+    - {rink = Rink A, time = 2020-09-13 20:00}
+    - {rink = Rink B, time = 2020-09-14 19:00}
+    - {rink = Rink B, time = 2020-09-15 21:00}
+    - unavailable = 2020-09-12
