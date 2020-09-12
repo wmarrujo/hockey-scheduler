@@ -1,4 +1,5 @@
 import argparse
+import toml
 
 ################################################################################
 # GET INPUT
@@ -10,8 +11,12 @@ parser.add_argument("input", help="the input file, in toml format")
 
 arguments = parser.parse_args()
 
-arguments |> .input |> print
-
 ################################################################################
 # HANDLE INPUT
 ################################################################################
+
+try:
+    data = toml.load(arguments.input)
+except toml.TomlDecodeError as error:
+    print("Unable to parse the input file:\n" + str(error))
+    exit()
