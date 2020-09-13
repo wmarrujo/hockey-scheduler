@@ -1,5 +1,6 @@
 import argparse
 import toml
+from solver import *
 
 ################################################################################
 # GET INPUT
@@ -12,7 +13,7 @@ parser.add_argument("input", help="the input file, in toml format")
 arguments = parser.parse_args()
 
 ################################################################################
-# HANDLE INPUT
+# READ INPUT
 ################################################################################
 
 try:
@@ -20,3 +21,17 @@ try:
 except toml.TomlDecodeError as error:
     print("Unable to parse the input file:\n" + str(error))
     exit()
+
+################################################################################
+# SOLVE
+################################################################################
+
+model = makeModel(data)
+print(model)
+#solveModel(model)
+
+################################################################################
+# VISUALIZE OUTPUT
+################################################################################
+
+# TODO: make & solve model first

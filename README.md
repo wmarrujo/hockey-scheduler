@@ -5,12 +5,6 @@ a small scheduling optimizer for hockey games
 
 input a `toml` file into the command line application as the first argument
 
-## Running
-
-```
-$ coconut-run src/main.coco test/test.toml
-```
-
 ## Building
 
 ```
@@ -18,3 +12,11 @@ $ ./make.sh
 ```
 
 This will build the python to the build directory
+
+## Testing
+
+```
+$ ./make.sh && python3 build test/test.toml
+```
+
+This will build & run the program with an input of `test/test.toml`
