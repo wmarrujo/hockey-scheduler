@@ -26,9 +26,8 @@ except toml.TomlDecodeError as error:
 # SOLVE
 ################################################################################
 
-model = makeModel(data)
-print(model)
-#solveModel(model)
+results = solveModel(data)
+print(results)
 
 ################################################################################
 # VISUALIZE OUTPUT

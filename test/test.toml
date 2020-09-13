@@ -1,21 +1,13 @@
 ["Team A"]
     ice-time = [
-        {rink = "Rink A", time = 2020-09-12 19:00:00},
         {rink = "Rink A", time = 2020-09-10 20:00:00},
-        {rink = "Rink A", time = 2020-09-14 20:00:00},
-        {rink = "Rink A", time = 2020-09-15 21:00:00}
+        {rink = "Rink A", time = 2020-09-11 20:00:00}
     ]
-    unavailable = [
-        2020-09-13
-    ]
+    unavailable = []
 
 ["Team B"]
     ice-time = [
-        {rink = "Rink A", time = 2020-09-13 20:00:00},
-        {rink = "Rink B", time = 2020-09-14 19:00:00},
-        {rink = "Rink B", time = 2020-09-15 21:00:00},
-        {rink = "Rink B", time = 2020-09-22 21:00:00}
+        {rink = "Rink A", time = 2020-09-12 20:00:00},
+        {rink = "Rink A", time = 2020-09-13 20:00:00}
     ]
-    unavailable = [
-        2020-09-12
-    ]
+    unavailable = []

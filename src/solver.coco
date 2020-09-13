@@ -1,29 +1,39 @@
 from pulp import *
 from math import floor
+import os
+#import platform
 
 ################################################################################
 # MODEL
 ################################################################################
 
-def makeModel(data):
+def solveModel(data):
+    # get data
     sets = makeSets(data)
     values = makeValues(data, sets)
+    
     variables = makeVariables(sets, values)
     objective = makeObjective(sets, values, variables)
     constraints = makeConstraints(sets, values, variables)
     
+    # make model
     model = LpProblem("Model", LpMinimize)
     model += objective
     for constraint in constraints:
         model += constraint
     
-    return model
-
-def solveModel(model):
-    solver = COIN_CMD(path="assets/osx/64/cbc", threads=1, msg=1, fracGap=0)
+    # solve model
+    solver = COIN_CMD(path=getCBCPath())
     model.solve(solver)
     
-    print("Done.")
+    # get solution
+    return variables |> fmap$((name, vs) -> (name, vs |> fmap$((index, variable) -> (index, value(variable)))))
+
+def getCBCPath():
+    dirname = os.path.dirname(__file__)
+    
+    # TODO: make dynamic
+    return os.path.abspath(os.path.join(dirname, "../assets/osx/64/cbc"))
 
 ################################################################################
 # SETS
@@ -111,10 +121,12 @@ def makeConstraints(sets, values, variables):
     # teams can only be in 1 rink at a time
     # & teams can only play 1 game per day
     # & teams can only play on days they're available
-    conservation = [sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) == (0 if s in values["unavailability"][t] else 1) for t in sets["teams"] for s in sets["slots"]]
+    print(len(sets["teams"]) * len(sets["slots"]))
+    conservation = [sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) <= (0 if s in values["unavailability"][t] else 1) for t in sets["teams"] for s in sets["slots"]]
     
     # only 2 games can be played per week
-    covid = [sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] is not None) <= 2 for w in sets["weeks"]]
+    print(len(sets["weeks"]))
+    covid = [sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] == w) <= 2 for w in sets["weeks"]]
     
     # teams must play at least one home game and one away game with every other team
     matchup = [sum(variables["playing"][(h, r, s)] * (s in values["home"][h]) + variables["playing"][(a, r, s)] for r in sets["rinks"] for s in sets["slots"]) >= 2 for h in sets["teams"] for a in sets["teams"] if h != a]
