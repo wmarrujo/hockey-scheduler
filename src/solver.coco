@@ -23,7 +23,6 @@ def solveModel(data):
         model += constraint[0], constraint[1]
     
     # solve model
-    print(model)
     solver = COIN_CMD(path=getCBCPath(), msg=0)
     model.solve(solver)
     
@@ -139,10 +138,7 @@ def makeConstraints(sets, values, variables):
     # games are between two teams, where one is the home team
     matchup = [(variables["playing"][(h, r, s)] == variables["playing"][(a, r, s)], "matchup[{},{},{},{}]".format(h,a,r,str(s))) for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
     
-    # when a game is played, one of the teams hosts
-    host = [(variables["playing"][(h, r, s)] * ((s, r) in values["home"][h]) == variables["playing"][(a, r, s)], "host[{},{},{},{}]".format(h,a,r,str(s))) for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
-    
     # teams must host a game with each other team (double round robin)
     robin = [(sum(variables["playing"][(t, r, s)] * ((s, r) in values["home"][t]) for r in sets["rinks"] for s in sets["slots"]) >= 1, "robin[{}]".format(t)) for t in sets["teams"]]
     
-    return [conservation, covid, matchup, host, robin] |> reduce$(+)
+    return [conservation, covid, matchup, robin] |> reduce$(+)
