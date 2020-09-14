@@ -1,11 +1,6 @@
-def showOutput(data, results):
+def makeOutput(data, results):
     # get a reference to who the home teams are for given rinks and ice times
     iceSlotRinks = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["rink"])) |> dict))
-    
-    #iceTimes = data \
-    #    |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> dict(iceTime, **{"team": team})))) \ # associate the team with each individual ice time
-    #    |> .values() |> reduce$(+) \ # concatenate
-    #    |> sorted$(key=item -> item["time"]) # sort by date
     
     # find the details of each team that is playing, when & where
     playing = results["playing"] |> .items() |> filter$((item) -> item[1] == 1) |> list \ # get only the games that are being played
@@ -13,7 +8,31 @@ def showOutput(data, results):
         |> fmap$(play -> {"team": play["team"], "rink": play["rink"], "slot": play["slot"], "home": play["slot"] in iceSlotRinks[play["team"]].keys()}) # get whether the team playing this game is the home team
     
     # group into games
-    # TODO: implement
+    games = playing |> groupby$(play -> (play["slot"], play["rink"])) \ # associate any plays happening in the same place & time (a game)
+        |> fmap$((k, g) -> (k, {"home": g[0]["team"] if g[0]["home"] else g[1]["team"], "away": g[1]["team"] if g[0]["home"] else g[0]["team"]})) # turn list of 2 plays into information about home & away teams
     
     # get a reference to the actual play times for the slots
     iceSlotTimes = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["time"])) |> dict))
+    
+    # turn the slots back into the home team's ice time
+    return games |> fmap$((instance, teams) -> ((iceSlotTimes[teams["home"]][instance[0]], instance[1]), teams))
+
+def formatOutput(output, formatter):
+    return output |> fmap$((instance, teams) -> (instance, formatter(teams["home"], teams["away"], instance[1], instance[0]))) |> .values() |> list
+
+def describeGame(homeTeam, awayTeam, rink, time):
+    return "{} host {} at rink {} on {}".format(homeTeam, awayTeam, rink, str(time))
+
+def csvGame(homeTeam, awayTeam, rink, time):
+    return ",".join([homeTeam, awayTeam, rink, str(time)])
+
+################################################################################
+# UTILITIES
+################################################################################
+
+def groupby(keyfunc, items):
+    d = {}
+    for item in items:
+        key = keyfunc(item)
+        d[key] = (d.setdefault(key, [])) + [item]
+    return d

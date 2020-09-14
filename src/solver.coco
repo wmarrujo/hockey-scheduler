@@ -20,11 +20,14 @@ def solveModel(data):
     model = LpProblem("Model", LpMinimize)
     model += objective
     for constraint in constraints:
-        model += constraint
+        model += constraint[0], constraint[1]
     
     # solve model
-    solver = COIN_CMD(path=getCBCPath())
+    print(model)
+    solver = COIN_CMD(path=getCBCPath(), msg=0)
     model.solve(solver)
+    
+    print("Solver finished with status \"{}\".".format(describeStatus(model)))
     
     # get solution
     return variables |> fmap$((name, vs) -> (name, vs |> fmap$((index, variable) -> (index, value(variable)))))
@@ -34,6 +37,13 @@ def getCBCPath():
     
     # TODO: make dynamic
     return os.path.abspath(os.path.join(dirname, "../assets/osx/64/cbc"))
+
+def describeStatus(model):
+    if model.status == 0: return "solver has not finished running"
+    elif model.status == 1: return "Optimal solution found"
+    elif model.status == -1: return "The problem is infeasible"
+    elif model.status == -2: return "The problem is unbounded"
+    elif model.status == -3: return "The solution is undefined"
 
 ################################################################################
 # SETS
@@ -121,18 +131,18 @@ def makeConstraints(sets, values, variables):
     # teams can only be in 1 rink at a time
     # & teams can only play 1 game per day
     # & teams can only play on days they're available
-    conservation = [sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) <= (0 if s in values["unavailability"][t] else 1) for t in sets["teams"] for s in sets["slots"]]
+    conservation = [(sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) <= (0 if s in values["unavailability"][t] else 1), "conservation[{},{}]".format(t, str(s))) for t in sets["teams"] for s in sets["slots"]]
     
     # only 2 games can be played per week
-    covid = [sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] == w) <= 2 for w in sets["weeks"]]
+    covid = [(sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] == w) <= 2*2, "covid[{}]".format(w)) for w in sets["weeks"]]
     
     # games are between two teams, where one is the home team
-    matchup = [variables["playing"][(h, r, s)] == variables["playing"][(a, r, s)] for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
+    matchup = [(variables["playing"][(h, r, s)] == variables["playing"][(a, r, s)], "matchup[{},{},{},{}]".format(h,a,r,str(s))) for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
     
     # when a game is played, one of the teams hosts
-    host = [variables["playing"][(h, r, s)] * ((s, r) in values["home"][h]) == variables["playing"][(a, r, s)] for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
+    host = [(variables["playing"][(h, r, s)] * ((s, r) in values["home"][h]) == variables["playing"][(a, r, s)], "host[{},{},{},{}]".format(h,a,r,str(s))) for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
     
     # teams must host a game with each other team (double round robin)
-    robin = [sum(variables["playing"][(t, r, s)] * ((s, r) in values["home"][t]) for r in sets["rinks"] for s in sets["slots"]) >= 1 for t in sets["teams"]]
+    robin = [(sum(variables["playing"][(t, r, s)] * ((s, r) in values["home"][t]) for r in sets["rinks"] for s in sets["slots"]) >= 1, "robin[{}]".format(t)) for t in sets["teams"]]
     
     return [conservation, covid, matchup, host, robin] |> reduce$(+)

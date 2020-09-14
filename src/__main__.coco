@@ -1,7 +1,7 @@
 import argparse
 import toml
 from solver import solveModel
-from output import showOutput
+from output import makeOutput, formatOutput, csvGame
 
 ################################################################################
 # GET INPUT
@@ -10,6 +10,7 @@ from output import showOutput
 parser = argparse.ArgumentParser(prog="hockey-scheduler", description="Schedules hockey games.")
 
 parser.add_argument("input", help="the input file, in toml format")
+parser.add_argument("output", help="the output file, will be in csv format")
 
 arguments = parser.parse_args()
 
@@ -33,6 +34,12 @@ results = solveModel(data)
 # VISUALIZE OUTPUT
 ################################################################################
 
-print(results)
+output = makeOutput(data, results)
+formatted = formatOutput(output, csvGame)
+csv = "home,away,rink,time\n" + "\n".join(formatted)
 
-showOutput(data, results)
+# write to file
+with open(arguments.output, "w") as output:
+    output.write(csv)
+
+print("Schedule saved to {}".format(arguments.output))
