@@ -1,0 +1,19 @@
+def showOutput(data, results):
+    # get a reference to who the home teams are for given rinks and ice times
+    iceSlotRinks = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["rink"])) |> dict))
+    
+    #iceTimes = data \
+    #    |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> dict(iceTime, **{"team": team})))) \ # associate the team with each individual ice time
+    #    |> .values() |> reduce$(+) \ # concatenate
+    #    |> sorted$(key=item -> item["time"]) # sort by date
+    
+    # find the details of each team that is playing, when & where
+    playing = results["playing"] |> .items() |> filter$((item) -> item[1] == 1) |> list \ # get only the games that are being played
+        |> fmap$(item -> {"team": item[0][0], "rink": item[0][1], "slot": item[0][2]}) \ # get the data of who, where, & when those games are being played
+        |> fmap$(play -> {"team": play["team"], "rink": play["rink"], "slot": play["slot"], "home": play["slot"] in iceSlotRinks[play["team"]].keys()}) # get whether the team playing this game is the home team
+    
+    # group into games
+    # TODO: implement
+    
+    # get a reference to the actual play times for the slots
+    iceSlotTimes = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["time"])) |> dict))

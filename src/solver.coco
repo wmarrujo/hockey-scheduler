@@ -65,10 +65,10 @@ def makeSets(data):
     weeks = slots |> fmap$(slot -> floor(((slot - earliestDay).days + earliestDay.weekday()) / 7))
     
     return {
-        "teams": teams,
-        "rinks": rinks,
-        "slots": slots,
-        "weeks": weeks
+        "teams": teams, # [team]
+        "rinks": rinks, # [rink]
+        "slots": slots, # [slot]
+        "weeks": weeks # [week]
     }
 
 ################################################################################
@@ -77,7 +77,7 @@ def makeSets(data):
 
 def makeValues(data, sets):
     # get team home rink slots
-    home = data |> fmap$((team, values) -> (team, values["ice-time"] |> fmap$(value -> value["time"].date())))
+    home = data |> fmap$((team, values) -> (team, values["ice-time"] |> fmap$(value -> (value["time"].date(), value["rink"]))))
     
     # get team slot availability
     unavailability = data |> fmap$((team, values) -> (team, values["unavailable"]))
@@ -90,10 +90,10 @@ def makeValues(data, sets):
     weeks = sets["slots"] |> fmap$(slot -> (slot, floor(((slot - earliestDay).days + earliestDay.weekday()) / 7))) |> dict
     
     return {
-        "home": home,
-        "unavailability": unavailability,
-        "days": days,
-        "weeks": weeks
+        "home": home, # {team: [(slot, rink)]}
+        "unavailability": unavailability, # {team, [slot]}
+        "days": days, # {slot: integer}
+        "weeks": weeks # {slot: week}
     }
 
 ################################################################################
@@ -121,14 +121,18 @@ def makeConstraints(sets, values, variables):
     # teams can only be in 1 rink at a time
     # & teams can only play 1 game per day
     # & teams can only play on days they're available
-    print(len(sets["teams"]) * len(sets["slots"]))
     conservation = [sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) <= (0 if s in values["unavailability"][t] else 1) for t in sets["teams"] for s in sets["slots"]]
     
     # only 2 games can be played per week
-    print(len(sets["weeks"]))
     covid = [sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] == w) <= 2 for w in sets["weeks"]]
     
-    # teams must play at least one home game and one away game with every other team
-    matchup = [sum(variables["playing"][(h, r, s)] * (s in values["home"][h]) + variables["playing"][(a, r, s)] for r in sets["rinks"] for s in sets["slots"]) >= 2 for h in sets["teams"] for a in sets["teams"] if h != a]
+    # games are between two teams, where one is the home team
+    matchup = [variables["playing"][(h, r, s)] == variables["playing"][(a, r, s)] for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
     
-    return [conservation, covid, matchup] |> reduce$(+)
+    # when a game is played, one of the teams hosts
+    host = [variables["playing"][(h, r, s)] * ((s, r) in values["home"][h]) == variables["playing"][(a, r, s)] for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
+    
+    # teams must host a game with each other team (double round robin)
+    robin = [sum(variables["playing"][(t, r, s)] * ((s, r) in values["home"][t]) for r in sets["rinks"] for s in sets["slots"]) >= 1 for t in sets["teams"]]
+    
+    return [conservation, covid, matchup, host, robin] |> reduce$(+)

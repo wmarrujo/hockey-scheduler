@@ -1,0 +1,47 @@
+["Chicklets"]
+    ice-time = [
+        {rink = "Minnetonka A", time = 2020-10-04 19:45:00},
+        {rink = "Minnetonka A", time = 2020-10-11 19:45:00},
+        {rink = "Minnetonka A", time = 2020-10-18 19:45:00},
+        {rink = "Minnetonka A", time = 2020-10-25 19:45:00},
+        {rink = "Minnetonka A", time = 2020-11-01 19:45:00},
+        {rink = "Minnetonka A", time = 2020-11-08 19:45:00},
+        {rink = "Minnetonka A", time = 2020-11-15 19:45:00},
+        {rink = "Minnetonka A", time = 2020-11-22 19:45:00}
+    ],
+    unavailable = [
+        2020-10-14,
+        2020-10-22
+    ]
+
+["Warriors"]
+    ice-time = [
+        {rink = "Orono", time = 2020-10-07 20:00:00},
+        {rink = "Orono", time = 2020-10-14 20:00:00},
+        {rink = "Orono", time = 2020-10-21 20:00:00},
+        {rink = "Orono", time = 2020-10-14 20:00:00},
+        {rink = "Orono", time = 2020-11-04 20:00:00},
+        {rink = "Orono", time = 2020-11-11 20:00:00},
+        {rink = "Orono", time = 2020-11-18 20:00:00},
+        {rink = "Orono", time = 2020-10-25 20:00:00}
+    ],
+    unavailable = [
+        2020-10-14,
+        2020-11-19
+    ]
+
+["Trainwreck"]
+    ice-time = [
+        {rink = "Richfield", time = 2020-10-01 18:30:00},
+        {rink = "Richfield", time = 2020-10-08 18:30:00},
+        {rink = "Richfield", time = 2020-10-15 18:30:00},
+        {rink = "Richfield", time = 2020-10-22 18:30:00},
+        {rink = "Richfield", time = 2020-10-29 18:30:00},
+        {rink = "Richfield", time = 2020-11-05 18:30:00},
+        {rink = "Richfield", time = 2020-11-12 18:30:00},
+        {rink = "Richfield", time = 2020-10-19 18:30:00}
+    ],
+    unavailable = [
+        2020-10-07,
+        2020-11-08
+    ]

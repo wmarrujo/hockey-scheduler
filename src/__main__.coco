@@ -1,6 +1,7 @@
 import argparse
 import toml
-from solver import *
+from solver import solveModel
+from output import showOutput
 
 ################################################################################
 # GET INPUT
@@ -27,10 +28,11 @@ except toml.TomlDecodeError as error:
 ################################################################################
 
 results = solveModel(data)
-print(results)
 
 ################################################################################
 # VISUALIZE OUTPUT
 ################################################################################
 
-# TODO: make & solve model first
+print(results)
+
+showOutput(data, results)
