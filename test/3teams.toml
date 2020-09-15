@@ -1,0 +1,23 @@
+["Team A"]
+    ice-time = [
+        {rink = "Rink A", time = 2020-09-10 20:00:00},
+        {rink = "Rink A", time = 2020-09-11 20:00:00}
+    ]
+    unavailable = []
+
+["Team B"]
+    ice-time = [
+        {rink = "Rink A", time = 2020-09-24 20:00:00},
+        {rink = "Rink A", time = 2020-09-25 20:00:00}
+    ]
+    unavailable = []
+
+["Team C"]
+    ice-time = [
+        {rink = "Rink A", time = 2020-10-08 20:00:00}
+        {rink = "Rink A", time = 2020-10-09 20:00:00}
+    ]
+    unavailable = []
+
+# optimal solution
+# home,   away,   rink,   time

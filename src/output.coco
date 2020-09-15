@@ -3,7 +3,7 @@ def makeOutput(data, results):
     iceSlotRinks = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["rink"])) |> dict))
     
     # find the details of each team that is playing, when & where
-    playing = results["playing"] |> .items() |> filter$((item) -> item[1] == 1) |> list \ # get only the games that are being played
+    playing = results["P"] |> .items() |> filter$((item) -> item[1] == 1) |> list \ # get only the games that are being played
         |> fmap$(item -> {"team": item[0][0], "rink": item[0][1], "slot": item[0][2]}) \ # get the data of who, where, & when those games are being played
         |> fmap$(play -> {"team": play["team"], "rink": play["rink"], "slot": play["slot"], "home": play["slot"] in iceSlotRinks[play["team"]].keys()}) # get whether the team playing this game is the home team
     
@@ -14,11 +14,22 @@ def makeOutput(data, results):
     # get a reference to the actual play times for the slots
     iceSlotTimes = data |> fmap$((team, value) -> (team, value["ice-time"] |> fmap$(iceTime -> (iceTime["time"].date(), iceTime["time"])) |> dict))
     
+    # DEBUG: remove later
+    import pprint
+    pp = pprint.PrettyPrinter(indent=4)
+    print("")
+    results["playing"] |> pp.pprint
+    print("")
+    games |> pp.pprint
+    print("")
+    
     # turn the slots back into the home team's ice time
     return games |> fmap$((instance, teams) -> ((iceSlotTimes[teams["home"]][instance[0]], instance[1]), teams))
+    # FIXME: this line seems to not work with 3 teams
 
 def formatOutput(output, formatter):
-    return output |> fmap$((instance, teams) -> (instance, formatter(teams["home"], teams["away"], instance[1], instance[0]))) |> .values() |> list
+    return output |> .items() |> sorted$(key=game -> game[0][0]) \ # sort by time
+        |> fmap$(game -> formatter(game[1]["home"], game[1]["away"], game[0][1], game[0][0])) # format using formatter
 
 def describeGame(homeTeam, awayTeam, rink, time):
     return "{} host {} at rink {} on {}".format(homeTeam, awayTeam, rink, str(time))

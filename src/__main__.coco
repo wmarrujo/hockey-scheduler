@@ -34,6 +34,10 @@ results = solveModel(data)
 # VISUALIZE OUTPUT
 ################################################################################
 
+import pprint
+pp = pprint.PrettyPrinter(indent=4)
+pp.pprint(results["P"])
+"""
 output = makeOutput(data, results)
 formatted = formatOutput(output, csvGame)
 csv = "home,away,rink,time\n" + "\n".join(formatted)
@@ -43,3 +47,4 @@ with open(arguments.output, "w") as output:
     output.write(csv)
 
 print("Schedule saved to {}".format(arguments.output))
+"""

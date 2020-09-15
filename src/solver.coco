@@ -19,8 +19,8 @@ def solveModel(data):
     # make model
     model = LpProblem("Model", LpMinimize)
     model += objective
-    for constraint in constraints:
-        model += constraint[0], constraint[1]
+    for name, constraint in constraints.items():
+        model += constraint, name
     
     # solve model
     solver = COIN_CMD(path=getCBCPath(), msg=0)
@@ -52,32 +52,11 @@ def makeSets(data):
     # get teams
     teams = data |> .keys() |> set
     
-    # get rinks
-    rinks = data \
-        |> fmap$((team, values) -> (team, values["ice-time"])) \ # get only the ice times per teaam
-        |> .values() |> list \ # get a list of lists of ice times
-        |> reduce$(+) \ # concatenate all individual team lists
-        |> fmap$(.["rink"]) \ # get the rinks
-        |> set # remove duplicates
-    
-    # get slots
-    slots = data \
-        |> fmap$((team, values) -> (team, values["ice-time"])) \ # get only the ice times per teaam
-        |> .values() |> list \ # get a list of lists of ice times
-        |> reduce$(+) \ # concatenate all individual team lists
-        |> fmap$(.["time"]) \ # get the rinks
-        |> fmap$(.date()) \ # turn into dates
-        |> set # remove duplicates
-    
-    # get weeks
-    earliestDay = min(slots)
-    weeks = slots |> fmap$(slot -> floor(((slot - earliestDay).days + earliestDay.weekday()) / 7))
+    iceTimes = data |> .values() |> list |> fmap$(item -> item["ice-time"]) |> reduce$(+) |> fmap$(iceTime -> (iceTime["rink"], iceTime["time"]))
     
     return {
-        "teams": teams, # [team]
-        "rinks": rinks, # [rink]
-        "slots": slots, # [slot]
-        "weeks": weeks # [week]
+        "T": teams, # [team]
+        "I": iceTimes, # [(rink, time)]
     }
 
 ################################################################################
@@ -86,23 +65,25 @@ def makeSets(data):
 
 def makeValues(data, sets):
     # get team home rink slots
-    home = data |> fmap$((team, values) -> (team, values["ice-time"] |> fmap$(value -> (value["time"].date(), value["rink"]))))
+    def home(team, iceTime):
+        return {"rink": iceTime[0], "time": iceTime[1]} in data[team]["ice-time"]
     
     # get team slot availability
-    unavailability = data |> fmap$((team, values) -> (team, values["unavailable"]))
+    def availability(team, iceTime):
+        return iceTime[1].date() not in data[team]["unavailable"]
     
     # get time slot day indices
-    earliestDay = min(sets["slots"])
-    days = sets["slots"] |> fmap$(slot -> (slot, (slot - earliestDay).days)) |> dict
+    earliestDay = sets["I"] |> fmap$(iceTime -> iceTime[1]) |> min
+    days = sets["I"] |> fmap$(iceTime -> (iceTime, floor((iceTime[1] - earliestDay).days))) |> dict
     
     # get time slot week indices
-    weeks = sets["slots"] |> fmap$(slot -> (slot, floor(((slot - earliestDay).days + earliestDay.weekday()) / 7))) |> dict
+    weeks = sets["I"] |> fmap$(iceTime -> (iceTime, floor(((iceTime[1] - earliestDay).days + earliestDay.weekday()) / 7))) |> dict
     
     return {
-        "home": home, # {team: [(slot, rink)]}
-        "unavailability": unavailability, # {team, [slot]}
-        "days": days, # {slot: integer}
-        "weeks": weeks # {slot: week}
+        "H": home, # (team, iceTime) -> 1 or 0
+        "A": availability, # (team, iceTime) -> 1 or 0
+        "D": days, # {iceTime: integer}
+        "W": weeks # {iceTime: integer}
     }
 
 ################################################################################
@@ -110,35 +91,67 @@ def makeValues(data, sets):
 ################################################################################
 
 def makeVariables(sets, values):
-    # whether a team is playing at a given rink at a given time
-    playing = LpVariable.dicts("p", [(t, r, s) for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"]], lowBound=0, cat=LpBinary)
+    T = sets["T"]
+    I = sets["I"]
     
-    return {"playing": playing}
+    # whether a team is playing at a given rink at a given time
+    playing = LpVariable.dicts("P", [(t, i) for t in T for i in I], lowBound=0, cat=LpBinary)
+    
+    return {"P": playing}
 
 ################################################################################
 # OBJECTIVE
 ################################################################################
 
 def makeObjective(sets, values, variables):
-    return sum(values["days"][s] * variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"])
+    T = sets["T"]
+    I = sets["I"]
+    D = values["D"]
+    P = variables["P"]
+    
+    return sum(P[(t, i)] * D[i] for t in T for i in I)
 
 ################################################################################
 # CONSTRAINTS
 ################################################################################
 
 def makeConstraints(sets, values, variables):
-    # teams can only be in 1 rink at a time
-    # & teams can only play 1 game per day
-    # & teams can only play on days they're available
-    conservation = [(sum(variables["playing"][(t, r, s)] for r in sets["rinks"]) <= (0 if s in values["unavailability"][t] else 1), "conservation[{},{}]".format(t, str(s))) for t in sets["teams"] for s in sets["slots"]]
+    T = sets["T"]
+    I = sets["I"]
+    H = values["H"]
+    A = values["A"]
+    D = values["D"]
+    W = values["W"]
+    P = variables["P"]
     
-    # only 2 games can be played per week
-    covid = [(sum(variables["playing"][(t, r, s)] for t in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if values["weeks"][s] == w) <= 2*2, "covid[{}]".format(w)) for w in sets["weeks"]]
+    # teams can only play 1 game per day, when available
+    conservation = {"conservation[{},{}]".format(t, i): \
+        sum(P[(t, n)] for n in I if D[n] == D[i]) <= A(t, i) for t in T for i in I}
     
-    # games are between two teams, where one is the home team
-    matchup = [(variables["playing"][(h, r, s)] == variables["playing"][(a, r, s)], "matchup[{},{},{},{}]".format(h,a,r,str(s))) for h in sets["teams"] for a in sets["teams"] for r in sets["rinks"] for s in sets["slots"] if h != a]
+    # only 2 games can be played in the same week
+    covid = {"covid[{},{}]".format(t, i): \
+        sum(P[(t, n)] for n in I if W[n] == W[i]) <= 2 for t in T for i in I}
     
-    # teams must host a game with each other team (double round robin)
-    robin = [(sum(variables["playing"][(t, r, s)] * ((s, r) in values["home"][t]) for r in sets["rinks"] for s in sets["slots"]) >= 1, "robin[{}]".format(t)) for t in sets["teams"]]
+    # games are when 2 teams play at the same time
+    games = {"games[{},{},{}]".format(h, a, i): \
+        P[(h, i)] == P[(a, i)] for h in T for a in T for i in I if h != a}
     
-    return [conservation, covid, matchup, robin] |> reduce$(+)
+    # a team can only play one other team at the same time
+    matchup = {"matchup[{},{}]".format(h, i): \
+        P[(h, i)] == sum(P[(a, i)] for a in T if h != a) for h in T for i in I}
+    
+    # a team cannot play on someone else's ice time without them
+    mooch = {"mooch[{},{}]".format(a, h, i): \
+        P[(a, i)] * H(h, i) == 0 for a in T for h in T for i in I if a != h}
+    # FIXME: causes problem to be infeasible
+    
+    # two teams cannot play each other without one of them having ice time
+    host = {"host[{},{},{}]".format(h, a, i): \
+        P[(h, i)] + P[(a, i)] - (H(h, i) + H(a, i)) <= 1 for h in T for a in T for i in I}
+    # FIXME: causes problem to be infeasible
+    
+    # each team must host each other team at least once
+    robin = {"robin[{},{}]".format(h, a): \
+        sum(P[(a, i)] for i in I if H(h, i)) >= 1 for h in T for a in T if h != a}
+    
+    return {**conservation, **covid, **games, **matchup, **mooch, **host, **robin}

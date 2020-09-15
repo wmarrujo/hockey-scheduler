@@ -16,7 +16,7 @@ This will build the python to the build directory
 ## Testing
 
 ```
-$ ./make.sh && python3 build test/test.toml
+$ ./make.sh && python3 build test.toml output.csv
 ```
 
 This will build & run the program with an input of `test/test.toml`
