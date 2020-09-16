@@ -1,7 +1,6 @@
 from pulp import *
 from math import floor
 import os
-#import platform
 
 ################################################################################
 # MODEL
@@ -80,8 +79,8 @@ def makeValues(data, sets):
     weeks = sets["I"] |> fmap$(iceTime -> (iceTime, floor(((iceTime[1] - earliestDay).days + earliestDay.weekday()) / 7))) |> dict
     
     return {
-        "H": home, # (team, iceTime) -> 1 or 0
-        "A": availability, # (team, iceTime) -> 1 or 0
+        "H": home, # (team, iceTime) -> Boolean
+        "A": availability, # (team, iceTime) -> Boolean
         "D": days, # {iceTime: integer}
         "W": weeks # {iceTime: integer}
     }
@@ -132,26 +131,13 @@ def makeConstraints(sets, values, variables):
     covid = {"covid[{},{}]".format(t, i): \
         sum(P[(t, n)] for n in I if W[n] == W[i]) <= 2 for t in T for i in I}
     
-    # games are when 2 teams play at the same time
-    games = {"games[{},{},{}]".format(h, a, i): \
-        P[(h, i)] == P[(a, i)] for h in T for a in T for i in I if h != a}
-    
     # a team can only play one other team at the same time
     matchup = {"matchup[{},{}]".format(h, i): \
-        P[(h, i)] == sum(P[(a, i)] for a in T if h != a) for h in T for i in I}
-    
-    # a team cannot play on someone else's ice time without them
-    mooch = {"mooch[{},{}]".format(a, h, i): \
-        P[(a, i)] * H(h, i) == 0 for a in T for h in T for i in I if a != h}
-    # FIXME: causes problem to be infeasible
-    
-    # two teams cannot play each other without one of them having ice time
-    host = {"host[{},{},{}]".format(h, a, i): \
-        P[(h, i)] + P[(a, i)] - (H(h, i) + H(a, i)) <= 1 for h in T for a in T for i in I}
-    # FIXME: causes problem to be infeasible
+        P[(h, i)] == sum(P[(a, i)] for a in T if a != h) for h in T for i in I if H(h, i)}
     
     # each team must host each other team at least once
     robin = {"robin[{},{}]".format(h, a): \
         sum(P[(a, i)] for i in I if H(h, i)) >= 1 for h in T for a in T if h != a}
     
-    return {**conservation, **covid, **games, **matchup, **mooch, **host, **robin}
+    return {**conservation, **covid, **matchup, **robin}
+    

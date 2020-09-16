@@ -21,3 +21,9 @@
 
 # optimal solution
 # home,   away,   rink,   time
+# Team A, Team C, Rink A, 2020-09-10 20:00:00
+# Team A, Team B, Rink A, 2020-09-11 20:00:00
+# Team B, Team C, Rink A, 2020-09-24 20:00:00
+# Team B, Team A, Rink A, 2020-09-25 20:00:00
+# Team C, Team B, Rink A, 2020-10-08 20:00:00
+# Team C, Team A, Rink A, 2020-10-09 20:00:00
