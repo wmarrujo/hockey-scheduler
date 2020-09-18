@@ -135,9 +135,9 @@ def makeConstraints(sets, values, variables):
     robin = {"robin[{},{}]".format(h, a): \
         sum(P[(a, i)] for i in I if H(h, i)) >= 1 for h in T for a in T if h != a}
     
-    # only 2 games can be played in the same week
-    covid = {"covid[{},{}]".format(t, i): \
-        sum(P[(t, n)] for n in I if W[n] == W[i]) <= 2 for t in T for i in I}
+    # only 4 games can be played in the same week
+    covid = {"covid[{}]".format(i): \
+        sum(P[(t, n)] for t in T for n in I if W[n] == W[i]) <= 4*2 for i in I}
     
     return {**conservation, **matchup, **robin, **covid}
     
