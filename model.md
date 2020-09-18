@@ -66,11 +66,11 @@ $$
 
 ### Games Played
 
-Each Team must play a total of at least 3 games.
+Each Team must play a total of at least 3 games against each other team.
 
 $$
-\sum_{i \in I}(P_{t,i}) \geq 3
-\quad \forall t \in T
+\sum_{i \in I : H_b = 1}(P_{a,i}) + \sum_{i \in I : H_a = 1}(P_{b,i}) >= 3
+\quad \forall (a, b) \in T \times T
 $$
 
 ### Covid

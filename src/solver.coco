@@ -135,9 +135,9 @@ def makeConstraints(sets, values, variables):
     robin = {"robin[{},{}]".format(h, a): \
         sum(P[(a, i)] for i in I if H(h, i)) >= 1 for h in T for a in T if h != a}
     
-    # each team must play at least 3 games
-    games = {"games[{}]".format(t): \
-        sum(P[(t, i)] for i in I) >= 3*len(T) for t in T}
+    # each team must play at least 3 games against each other team
+    games = {"games[{},{}]".format(a,b): \
+        sum(P[(a,i)] for i in I if H(b,i)) + sum(P[(b,i)] for i in I if H(a,i)) >= 3 for a in T for b in T}
     
     # each team can only play a maximum of 2 games per week
     covid = {"covid[{}]".format(i): \
