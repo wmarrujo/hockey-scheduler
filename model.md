@@ -60,14 +60,24 @@ $$
 Each team must host each other team at least once.
 
 $$
-\sum_{i \in I : H_{h,i} = 1}(P_{a,i}) \geq
+\sum_{i \in I : H_{h,i} = 1}(P_{a,i}) \geq 1
 \quad \forall (h,a) \in T \times T : h \neq a
+$$
+
+### Games Played
+
+Each Team must play a total of at least 3 games.
+
+$$
+\sum_{i \in I}(P_{t,i}) \geq 3
+\quad \forall t \in T
 $$
 
 ### Covid
 
-Only 2 games can be played in the same week.
+A team can only play a maximum of 2 games in a week.
 
 $$
 \sum_{n \in I : W_i = W_n}(P_{t,n}) \leq 2
+\quad \forall (t,i) \in T \times I
 $$
